@@ -1,0 +1,740 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import {
+  Search,
+  Calendar,
+  Star,
+  Info,
+  Grid,
+  List,
+  Sun,
+  Moon,
+} from "lucide-react";
+
+export default function Home() {
+  // 検索フォームの参照を作成
+  const searchInputRef = useRef(null);
+
+  // 基本的な状態
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // 新しい機能のための状態
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [viewMode, setViewMode] = useState("grid");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [sortBy, setSortBy] = useState("relevance");
+  const [filters, setFilters] = useState({
+    genre: "",
+    year: "",
+    rating: "",
+  });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // サジェスト関連の状態
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  // 検索履歴をクリア
+  const clearSearchHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem("searchHistory");
+  };
+
+  // クリック以外の場所をクリックしたときにサジェストを非表示にする
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // サジェストアイテムをクリックしたときのハンドラー
+  const handleSuggestionClick = (suggestion) => {
+    setQuery(suggestion.title);
+    searchMovies(suggestion.title);
+    setShowSuggestions(false);
+    setSelectedIndex(-1);
+  };
+
+  // サジェスト検索のための遅延実行
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (query.trim().length >= 2) {
+        try {
+          const response = await axios.get(
+            `https://api.themoviedb.org/3/search/movie`,
+            {
+              params: {
+                api_key: "c3dda0e266ce91617479e207694a7bad",
+                query: query,
+                language: "ja-JP",
+                page: 1,
+              },
+            }
+          );
+
+          // 最大5件までのサジェストを表示
+          const suggestedMovies = response.data.results
+            .slice(0, 5)
+            .map((movie) => ({
+              id: movie.id,
+              title: movie.title,
+              releaseDate: movie.release_date
+                ? new Date(movie.release_date).getFullYear()
+                : null,
+              posterPath: movie.poster_path
+                ? `https://image.tmdb.org/t/p/w92${movie.poster_path}`
+                : null,
+            }));
+
+          setSuggestions(suggestedMovies);
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error("Error fetching suggestions:", error);
+        }
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300); // 300ミリ秒の遅延
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
+
+  // キーボードナビゲーション用のハンドラー
+  const handleKeyDown = (e) => {
+    if (!showSuggestions) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > -1 ? prev - 1 : -1));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (selectedIndex > -1) {
+          const selected = suggestions[selectedIndex];
+          setQuery(selected.title);
+          searchMovies(selected.title);
+          setShowSuggestions(false);
+          setSelectedIndex(-1);
+        } else {
+          searchMovies();
+        }
+        break;
+      case "Escape":
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // フィルターオプション
+  const genreOptions = [
+    { id: "28", name: "アクション" },
+    { id: "12", name: "アドベンチャー" },
+    { id: "16", name: "アニメーション" },
+    { id: "35", name: "コメディ" },
+    { id: "80", name: "クライム" },
+    { id: "99", name: "ドキュメンタリー" },
+    { id: "18", name: "ドラマ" },
+    { id: "10751", name: "ファミリー" },
+    { id: "14", name: "ファンタジー" },
+    { id: "36", name: "歴史" },
+    { id: "27", name: "ホラー" },
+    { id: "10402", name: "音楽" },
+    { id: "9648", name: "ミステリー" },
+    { id: "10749", name: "ロマンス" },
+    { id: "878", name: "SF" },
+    { id: "10770", name: "TV映画" },
+    { id: "53", name: "スリラー" },
+    { id: "10752", name: "戦争" },
+    { id: "37", name: "西部劇" },
+  ];
+
+  const yearOptions = Array.from({ length: 50 }, (_, i) => ({
+    value: `${new Date().getFullYear() - i}`,
+    label: `${new Date().getFullYear() - i}年`,
+  }));
+
+  const ratingOptions = [
+    { value: "8", label: "8点以上" },
+    { value: "7", label: "7点以上" },
+    { value: "6", label: "6点以上" },
+    { value: "5", label: "5点以上" },
+  ];
+
+  // 初期状態の復元
+  useEffect(() => {
+    const savedState = localStorage.getItem("movieSearchState");
+    const savedHistory = localStorage.getItem("searchHistory");
+    const savedViewMode = localStorage.getItem("viewMode");
+    const savedDarkMode = localStorage.getItem("darkMode");
+
+    if (savedState) {
+      const { savedQuery, savedMovies, savedFilters, savedSort, savedPage } =
+        JSON.parse(savedState);
+      setQuery(savedQuery || "");
+      setMovies(savedMovies || []);
+      setFilters(savedFilters || { genre: "", year: "", rating: "" });
+      setSortBy(savedSort || "relevance");
+      setPage(savedPage || 1);
+    }
+
+    if (savedHistory) {
+      setSearchHistory(JSON.parse(savedHistory));
+    }
+
+    if (savedViewMode) {
+      setViewMode(savedViewMode);
+    }
+
+    if (savedDarkMode) {
+      setIsDarkMode(JSON.parse(savedDarkMode));
+    }
+  }, []);
+
+  // 状態の保存
+  useEffect(() => {
+    if (query || movies.length > 0) {
+      localStorage.setItem(
+        "movieSearchState",
+        JSON.stringify({
+          savedQuery: query,
+          savedMovies: movies,
+          savedFilters: filters,
+          savedSort: sortBy,
+          savedPage: page,
+        })
+      );
+    }
+  }, [query, movies, filters, sortBy, page]);
+
+  // 検索履歴の保存
+  useEffect(() => {
+    localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
+  }, [searchHistory]);
+
+  // 表示モードの保存
+  useEffect(() => {
+    localStorage.setItem("viewMode", viewMode);
+  }, [viewMode]);
+
+  // ダークモードの保存
+  useEffect(() => {
+    localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
+  // 検索履歴に追加
+  const addToSearchHistory = (keyword) => {
+    setSearchHistory((prev) => {
+      const newHistory = [keyword, ...prev.filter((k) => k !== keyword)].slice(
+        0,
+        5
+      );
+      return newHistory;
+    });
+  };
+
+  // ソート機能
+  const sortMovies = (movies) => {
+    switch (sortBy) {
+      case "date":
+        return [...movies].sort(
+          (a, b) => new Date(b.release_date) - new Date(a.release_date)
+        );
+      case "rating":
+        return [...movies].sort((a, b) => b.vote_average - a.vote_average);
+      case "title":
+        return [...movies].sort((a, b) => a.title.localeCompare(b.title, "ja"));
+      default:
+        return movies;
+    }
+  };
+
+  // フィルター機能
+  const filterMovies = (movies) => {
+    return movies.filter((movie) => {
+      const genreMatch =
+        !filters.genre || movie.genre_ids.includes(parseInt(filters.genre));
+      const yearMatch =
+        !filters.year || movie.release_date.startsWith(filters.year);
+      const ratingMatch =
+        !filters.rating || movie.vote_average >= parseFloat(filters.rating);
+      return genreMatch && yearMatch && ratingMatch;
+    });
+  };
+
+  // 検索機能
+  const searchMovies = async (searchQuery = query, newPage = 1) => {
+    if (!searchQuery.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.get(
+        `https://api.themoviedb.org/3/search/movie`,
+        {
+          params: {
+            api_key: "c3dda0e266ce91617479e207694a7bad",
+            query: searchQuery,
+            language: "ja-JP",
+            page: newPage,
+          },
+        }
+      );
+
+      const moviesWithFullPosterUrl = response.data.results.map((movie) => ({
+        ...movie,
+        poster_url: movie.poster_path
+          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+          : null,
+      }));
+
+      if (newPage === 1) {
+        setMovies(moviesWithFullPosterUrl);
+      } else {
+        setMovies((prev) => [...prev, ...moviesWithFullPosterUrl]);
+      }
+
+      setTotalPages(response.data.total_pages);
+      addToSearchHistory(searchQuery);
+      setPage(newPage);
+    } catch (error) {
+      setError("映画の検索中にエラーが発生しました。もう一度お試しください。");
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 検索のクリア
+  const clearSearch = () => {
+    setQuery("");
+    setMovies([]);
+    setPage(1);
+    setFilters({ genre: "", year: "", rating: "" });
+    setSortBy("relevance");
+    localStorage.removeItem("movieSearchState");
+  };
+
+  // JSXの戻り値
+  return (
+    <div
+      className={`min-h-screen ${
+        isDarkMode ? "dark bg-gray-900" : "bg-slate-100"
+      }`}
+    >
+      {/* ヘッダー */}
+      <div className={`${isDarkMode ? "bg-gray-800" : "bg-white"} shadow`}>
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => {
+                clearSearch();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`text-3xl font-bold ${
+                isDarkMode
+                  ? "text-white hover:text-gray-200"
+                  : "text-gray-900 hover:text-gray-700"
+              } transition-colors`}
+            >
+              Movie Search App
+            </button>
+            <div className="flex items-center gap-4">
+              {searchHistory.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSearchHistory([]);
+                    localStorage.removeItem("searchHistory");
+                  }}
+                  className={`px-3 py-1 text-sm rounded-lg transition-colors
+                  ${
+                    isDarkMode
+                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  履歴消去
+                </button>
+              )}
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                {isDarkMode ? (
+                  <Sun className="text-white" size={20} />
+                ) : (
+                  <Moon size={20} />
+                )}
+              </button>
+              <button
+                onClick={() =>
+                  setViewMode(viewMode === "grid" ? "list" : "grid")
+                }
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                {viewMode === "grid" ? (
+                  <List className={isDarkMode ? "text-white" : ""} size={20} />
+                ) : (
+                  <Grid className={isDarkMode ? "text-white" : ""} size={20} />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* メインコンテンツ */}
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* 検索フォーム */}
+        <div className="max-w-3xl mx-auto mb-8">
+          <div className="flex gap-2 mb-4">
+            <div className="relative flex-1" ref={searchInputRef}>
+              <input
+                type="text"
+                placeholder="映画のタイトルを入力..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className={`w-full pl-10 pr-4 py-2 rounded-lg outline-none transition duration-200
+                  ${
+                    isDarkMode
+                      ? "bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                      : "bg-white border-gray-300 text-gray-900"
+                  } border focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+              <Search
+                className={`absolute left-3 top-2.5 ${
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                }`}
+                size={20}
+              />
+
+              {/* サジェストリスト */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div
+                  className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg overflow-hidden
+                  ${
+                    isDarkMode
+                      ? "bg-gray-800 border-gray-700"
+                      : "bg-white border-gray-200"
+                  } border`}
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={suggestion.id}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className={`flex items-center p-3 cursor-pointer transition-colors
+                        ${
+                          index === selectedIndex
+                            ? isDarkMode
+                              ? "bg-gray-700"
+                              : "bg-blue-50"
+                            : isDarkMode
+                            ? "hover:bg-gray-700"
+                            : "hover:bg-gray-50"
+                        }
+                        ${isDarkMode ? "border-gray-700" : "border-gray-100"}
+                        ${index !== suggestions.length - 1 ? "border-b" : ""}`}
+                    >
+                      {suggestion.posterPath ? (
+                        <img
+                          src={suggestion.posterPath}
+                          alt={suggestion.title}
+                          className="w-10 h-14 object-cover rounded mr-3 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-14 bg-gray-200 rounded mr-3 flex items-center justify-center flex-shrink-0">
+                          <Info size={20} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div>
+                        <div
+                          className={`font-medium ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {suggestion.title}
+                        </div>
+                        {suggestion.releaseDate && (
+                          <div
+                            className={`text-sm ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            {suggestion.releaseDate}年
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => searchMovies()}
+              disabled={isLoading || !query.trim()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition duration-200 font-medium min-w-[100px]"
+            >
+              {isLoading ? "検索中..." : "検索"}
+            </button>
+          </div>
+
+          {/* 検索履歴 */}
+          {searchHistory.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span
+                className={`text-sm ${
+                  isDarkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                最近の検索:
+              </span>
+              {searchHistory.map((keyword, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setQuery(keyword);
+                    // 検索履歴からの検索も新規検索として扱う
+                    searchMovies(keyword, 1);
+                  }}
+                  className={`px-3 py-1 text-sm rounded-full transition-colors
+                    ${
+                      isDarkMode
+                        ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                >
+                  {keyword}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* フィルターとソート */}
+          <div className="flex flex-wrap gap-4 mb-4">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={`px-3 py-1.5 rounded-lg border transition-colors
+                ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                }`}
+            >
+              <option value="relevance">関連度順</option>
+              <option value="date">公開日順</option>
+              <option value="rating">評価順</option>
+              <option value="title">タイトル順</option>
+            </select>
+
+            <select
+              value={filters.genre}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, genre: e.target.value }))
+              }
+              className={`px-3 py-1.5 rounded-lg border transition-colors
+                ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                }`}
+            >
+              <option value="">ジャンル: すべて</option>
+              {genreOptions.map((genre) => (
+                <option key={genre.id} value={genre.id}>
+                  {genre.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.year}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, year: e.target.value }))
+              }
+              className={`px-3 py-1.5 rounded-lg border transition-colors
+                ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                }`}
+            >
+              <option value="">年: すべて</option>
+              {yearOptions.map((year) => (
+                <option key={year.value} value={year.value}>
+                  {year.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.rating}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, rating: e.target.value }))
+              }
+              className={`px-3 py-1.5 rounded-lg border transition-colors
+                ${
+                  isDarkMode
+                    ? "bg-gray-800 border-gray-700 text-white"
+                    : "bg-white border-gray-300 text-gray-900"
+                }`}
+            >
+              <option value="">評価: すべて</option>
+              {ratingOptions.map((rating) => (
+                <option key={rating.value} value={rating.value}>
+                  {rating.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* エラーメッセージ */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-200">
+            {error}
+          </div>
+        )}
+
+        {/* 検索結果 */}
+        {movies.length > 0 && (
+          <div
+            className={`${
+              viewMode === "grid"
+                ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                : "space-y-4"
+            }`}
+          >
+            {sortMovies(filterMovies(movies)).map((movie) => (
+              <div
+                key={movie.id}
+                onClick={() => (window.location.href = `/movies/${movie.id}`)}
+                className={`
+                  ${
+                    isDarkMode
+                      ? "bg-gray-800 hover:bg-gray-700"
+                      : "bg-white hover:shadow-lg"
+                  }
+                  rounded-xl shadow transition-all duration-200 overflow-hidden cursor-pointer
+                `}
+              >
+                <div className={`${viewMode === "grid" ? "flex-col" : "flex"}`}>
+                  {/* ポスター画像 */}
+                  <div
+                    className={
+                      viewMode === "grid" ? "w-full" : "w-48 flex-shrink-0"
+                    }
+                  >
+                    {movie.poster_url ? (
+                      <img
+                        src={movie.poster_url}
+                        alt={movie.title}
+                        className="h-64 w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-64 w-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <Info className="text-gray-400" size={48} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 映画情報 */}
+                  <div className="p-6 flex-1">
+                    <h2
+                      className={`text-xl font-bold mb-2 ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {movie.title}
+                    </h2>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      <div className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {movie.release_date}
+                      </div>
+                      <div className="flex items-center">
+                        <Star className="w-4 h-4 mr-1 text-yellow-500" />
+                        {movie.vote_average?.toFixed(1) || "N/A"}
+                      </div>
+                    </div>
+                    <p
+                      className={`text-sm leading-relaxed mb-4 line-clamp-3 ${
+                        isDarkMode ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
+                      {movie.overview || "あらすじは登録されていません。"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 検索結果が0件の場合 */}
+        {movies.length === 0 && !isLoading && query && (
+          <div
+            className={`text-center ${
+              isDarkMode ? "text-gray-400" : "text-gray-600"
+            } mt-8`}
+          >
+            検索結果が見つかりませんでした。
+          </div>
+        )}
+
+        {/* ローディング表示 */}
+        {isLoading && (
+          <div className="flex justify-center mt-8">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {/* もっと読み込むボタン */}
+        {movies.length > 0 && page < totalPages && !isLoading && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => searchMovies(query, page + 1)}
+              className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              もっと見る
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
