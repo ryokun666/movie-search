@@ -12,6 +12,8 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import MovieCard from "@/components/MovieCard";
+import { getRecentCommentedMovies } from "@/lib/comments";
 
 export default function Home() {
   // 検索フォームの参照を作成
@@ -40,12 +42,34 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [isInitialRender, setIsInitialRender] = useState(true);
+
+  // 最近コメントされた映画情報
+  const [recentMovies, setRecentMovies] = useState([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
 
   // 検索履歴をクリア
   const clearSearchHistory = () => {
     setSearchHistory([]);
     localStorage.removeItem("searchHistory");
   };
+
+  // 最近コメントがついた映画を取得
+  useEffect(() => {
+    const fetchRecentMovies = async () => {
+      try {
+        setIsLoadingRecent(true);
+        const movies = await getRecentCommentedMovies();
+        setRecentMovies(movies);
+      } catch (error) {
+        console.error("Error fetching recent movies:", error);
+      } finally {
+        setIsLoadingRecent(false);
+      }
+    };
+
+    fetchRecentMovies();
+  }, []);
 
   // クリック以外の場所をクリックしたときにサジェストを非表示にする
   useEffect(() => {
@@ -74,48 +98,56 @@ export default function Home() {
 
   // サジェスト検索のための遅延実行
   useEffect(() => {
+    // 初期レンダリング時はサジェストを表示しない
+    if (isInitialRender) {
+      setIsInitialRender(false);
+      return;
+    }
+
+    // 入力が2文字未満の場合やクエリが空の場合は早期リターン
+    if (!query || query.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
     const delayDebounceFn = setTimeout(async () => {
-      if (query.trim().length >= 2) {
-        try {
-          const response = await axios.get(
-            `https://api.themoviedb.org/3/search/movie`,
-            {
-              params: {
-                api_key: "c3dda0e266ce91617479e207694a7bad",
-                query: query,
-                language: "ja-JP",
-                page: 1,
-              },
-            }
-          );
+      try {
+        const response = await axios.get(
+          `https://api.themoviedb.org/3/search/movie`,
+          {
+            params: {
+              api_key: "c3dda0e266ce91617479e207694a7bad",
+              query: query,
+              language: "ja-JP",
+              page: 1,
+            },
+          }
+        );
 
-          // 最大5件までのサジェストを表示
-          const suggestedMovies = response.data.results
-            .slice(0, 5)
-            .map((movie) => ({
-              id: movie.id,
-              title: movie.title,
-              releaseDate: movie.release_date
-                ? new Date(movie.release_date).getFullYear()
-                : null,
-              posterPath: movie.poster_path
-                ? `https://image.tmdb.org/t/p/w92${movie.poster_path}`
-                : null,
-            }));
+        // 最大5件までのサジェストを表示
+        const suggestedMovies = response.data.results
+          .slice(0, 5)
+          .map((movie) => ({
+            id: movie.id,
+            title: movie.title,
+            releaseDate: movie.release_date
+              ? new Date(movie.release_date).getFullYear()
+              : null,
+            posterPath: movie.poster_path
+              ? `https://image.tmdb.org/t/p/w92${movie.poster_path}`
+              : null,
+          }));
 
-          setSuggestions(suggestedMovies);
-          setShowSuggestions(true);
-        } catch (error) {
-          console.error("Error fetching suggestions:", error);
-        }
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
+        setSuggestions(suggestedMovies);
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
       }
-    }, 300); // 300ミリ秒の遅延
+    }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query]);
+  }, [query, isInitialRender]); // isInitialRenderを依存配列に追加
 
   // キーボードナビゲーション用のハンドラー
   const handleKeyDown = (e) => {
@@ -306,7 +338,7 @@ export default function Home() {
         `https://api.themoviedb.org/3/search/movie`,
         {
           params: {
-            api_key: "c3dda0e266ce91617479e207694a7bad",
+            api_key: process.env.NEXT_PUBLIC_MOVIE_API_KEY,
             query: searchQuery,
             language: "ja-JP",
             page: newPage,
@@ -345,6 +377,8 @@ export default function Home() {
     setPage(1);
     setFilters({ genre: "", year: "", rating: "" });
     setSortBy("relevance");
+    setSuggestions([]);
+    setShowSuggestions(false);
     localStorage.removeItem("movieSearchState");
   };
 
@@ -370,7 +404,7 @@ export default function Home() {
                   : "text-gray-900 hover:text-gray-700"
               } transition-colors`}
             >
-              Movie Search App
+              #誰かの映画メモ
             </button>
             <div className="flex items-center gap-4">
               {searchHistory.length > 0 && (
@@ -622,16 +656,14 @@ export default function Home() {
             </select>
           </div>
         </div>
-
         {/* エラーメッセージ */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-200">
             {error}
           </div>
         )}
-
         {/* 検索結果 */}
-        {movies.length > 0 && (
+        {movies.length > 0 ? (
           <div
             className={`${
               viewMode === "grid"
@@ -640,69 +672,59 @@ export default function Home() {
             }`}
           >
             {sortMovies(filterMovies(movies)).map((movie) => (
-              <div
+              <MovieCard
                 key={movie.id}
-                onClick={() => (window.location.href = `/movies/${movie.id}`)}
-                className={`
-                  ${
-                    isDarkMode
-                      ? "bg-gray-800 hover:bg-gray-700"
-                      : "bg-white hover:shadow-lg"
-                  }
-                  rounded-xl shadow transition-all duration-200 overflow-hidden cursor-pointer
-                `}
-              >
-                <div className={`${viewMode === "grid" ? "flex-col" : "flex"}`}>
-                  {/* ポスター画像 */}
-                  <div
-                    className={
-                      viewMode === "grid" ? "w-full" : "w-48 flex-shrink-0"
-                    }
-                  >
-                    {movie.poster_url ? (
-                      <img
-                        src={movie.poster_url}
-                        alt={movie.title}
-                        className="h-64 w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-64 w-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <Info className="text-gray-400" size={48} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 映画情報 */}
-                  <div className="p-6 flex-1">
-                    <h2
-                      className={`text-xl font-bold mb-2 ${
-                        isDarkMode ? "text-white" : "text-gray-900"
-                      }`}
-                    >
-                      {movie.title}
-                    </h2>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {movie.release_date}
-                      </div>
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 mr-1 text-yellow-500" />
-                        {movie.vote_average?.toFixed(1) || "N/A"}
-                      </div>
-                    </div>
-                    <p
-                      className={`text-sm leading-relaxed mb-4 line-clamp-3 ${
-                        isDarkMode ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      {movie.overview || "あらすじは登録されていません。"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                movie={movie}
+                viewMode={viewMode}
+                isDarkMode={isDarkMode}
+              />
             ))}
           </div>
+        ) : (
+          <>
+            {!query && (
+              <>
+                <h2
+                  className={`text-xl font-bold mb-6 ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  最近コメントがついた映画
+                </h2>
+                {isLoadingRecent ? (
+                  <div className="flex justify-center mt-8">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <div
+                    className={`${
+                      viewMode === "grid"
+                        ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                        : "space-y-4"
+                    }`}
+                  >
+                    {recentMovies.map((movie) => (
+                      <MovieCard
+                        key={movie.id}
+                        movie={movie}
+                        viewMode={viewMode}
+                        isDarkMode={isDarkMode}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {query && !isLoading && (
+              <div
+                className={`text-center ${
+                  isDarkMode ? "text-gray-400" : "text-gray-600"
+                } mt-8`}
+              >
+                検索結果が見つかりませんでした。
+              </div>
+            )}
+          </>
         )}
 
         {/* 検索結果が0件の場合 */}
@@ -715,14 +737,12 @@ export default function Home() {
             検索結果が見つかりませんでした。
           </div>
         )}
-
         {/* ローディング表示 */}
         {isLoading && (
           <div className="flex justify-center mt-8">
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
-
         {/* もっと読み込むボタン */}
         {movies.length > 0 && page < totalPages && !isLoading && (
           <div className="mt-8 text-center">
