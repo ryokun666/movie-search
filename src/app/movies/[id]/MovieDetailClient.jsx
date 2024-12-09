@@ -29,6 +29,7 @@ const MovieDetailClient = ({ movieId }) => {
   const [rating, setRating] = useState(0);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedCommentId, setSelectedCommentId] = useState(null);
+  const [watchProviders, setWatchProviders] = useState(null);
 
   const {
     comments,
@@ -38,6 +39,28 @@ const MovieDetailClient = ({ movieId }) => {
     handleLike,
     handleReport,
   } = useComments(movieId);
+
+  useEffect(() => {
+    const fetchWatchProviders = async () => {
+      try {
+        const response = await axios.get(
+          `https://api.themoviedb.org/3/movie/${movieId}/watch/providers`,
+          {
+            params: {
+              api_key: "c3dda0e266ce91617479e207694a7bad",
+            },
+          }
+        );
+
+        // 日本の配信情報（JP）を取得
+        setWatchProviders(response.data.results.JP || null);
+      } catch (error) {
+        console.error("配信情報の取得に失敗しました:", error);
+      }
+    };
+
+    fetchWatchProviders();
+  }, [movieId]);
 
   useEffect(() => {
     const fetchMovieDetail = async () => {
@@ -258,6 +281,37 @@ const MovieDetailClient = ({ movieId }) => {
                         {genre.name}
                       </span>
                     ))}
+                  </div>
+                  {/* 配信情報 */}
+                  <div className="mb-6">
+                    <h2 className="text-xl font-semibold mb-2">配信情報</h2>
+                    {watchProviders ? (
+                      watchProviders.flatrate ? (
+                        <div className="flex flex-wrap gap-4">
+                          {watchProviders.flatrate.map((provider) => (
+                            <div
+                              key={provider.provider_id}
+                              className="flex items-center"
+                            >
+                              <img
+                                src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                                alt={provider.provider_name}
+                                className="w-12 h-12 rounded-lg"
+                              />
+                              {/* <span className="ml-2 text-gray-700">
+                                {provider.provider_name}
+                              </span> */}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500">
+                          日本での配信情報はありません。
+                        </p>
+                      )
+                    ) : (
+                      <p className="text-gray-500">配信情報を取得中...</p>
+                    )}
                   </div>
                 </div>
               )}
