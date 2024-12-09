@@ -19,7 +19,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useComments } from "@/hooks/useComments";
 import { likeStorage } from "@/lib/comments";
 import { getRelativeTime } from "@/lib/utils";
-import { useConfetti } from "@/hooks/useConfetti";
 
 export default function MovieCard({ movie, viewMode, isDarkMode }) {
   const [nickname, setNickname] = useState("");
@@ -41,10 +40,9 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
         nickname: nickname.trim() || `匿名${Math.floor(Math.random() * 1000)}`,
         rating,
         comment: comment.trim(),
+        movieData: movie, // 必要に応じて
       });
 
-      // コンフェッティ発動
-      triggerConfetti();
       setComment("");
       setRating(0);
       setNickname("");
