@@ -27,6 +27,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
   const [rating, setRating] = useState(0);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedCommentId, setSelectedCommentId] = useState(null);
+  const [isWritingComment, setIsWritingComment] = useState(false);
 
   // カスタムフックを使用してコメント機能を実装
   const { comments, isLoading, error, postComment, handleLike, handleReport } =
@@ -40,7 +41,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
     try {
       await postComment({
         movieId: movie.id,
-        nickname: nickname.trim() || `匿名${Math.floor(Math.random() * 1000)}`,
+        nickname: nickname.trim() || "匿名希望くん",
         rating,
         comment: comment.trim(),
         movieData: movie,
@@ -107,23 +108,28 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
       {/* カード全体をグリッドレイアウトに */}
       <div className="grid grid-cols-12 gap-3 md:gap-4">
         {/* ポスター画像: モバイルでは4列、デスクトップでは5列 */}
-        <div className="col-span-4 md:col-span-5">
-          {movie.poster_url ? (
-            <img
-              src={movie.poster_url}
-              alt={movie.title}
-              className="w-full h-full object-cover aspect-[2/3]"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full aspect-[2/3] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Info className="text-gray-400" size={48} />
-            </div>
-          )}
-        </div>
-
+        {!isWritingComment && (
+          <div className="col-span-4 md:col-span-5">
+            {movie.poster_url ? (
+              <img
+                src={movie.poster_url}
+                alt={movie.title}
+                className="w-full h-full object-cover aspect-[2/3]"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full aspect-[2/3] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <Info className="text-gray-400" size={48} />
+              </div>
+            )}
+          </div>
+        )}
         {/* コンテンツ部分: モバイルでは8列、デスクトップでは7列 */}
-        <div className="col-span-8 md:col-span-7 p-3 md:p-4 flex flex-col">
+        <div
+          className={`${
+            isWritingComment ? "col-span-12" : "col-span-8 md:col-span-7"
+          } p-3 md:p-4 flex flex-col`}
+        >
           {/* ヘッダー部分 */}
           <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-2">
@@ -149,9 +155,9 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
             ) : featuredComment ? (
               <div className="comment-section">
                 <div className="flex items-center justify-between mb-1.5 gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex flex-col mb-1.5">
                     <span
-                      className={`font-medium text-sm truncate ${
+                      className={`font-medium text-sm ${
                         isDarkMode ? "text-white" : "text-gray-900"
                       }`}
                     >
@@ -225,6 +231,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                       ? "bg-gray-700 hover:bg-gray-600 text-white"
                       : "bg-gray-50 hover:bg-gray-100"
                   }`}
+                  onClick={() => setIsWritingComment(!isWritingComment)}
                 >
                   <MessageCircle className="w-4 h-4 mr-1.5" />
                   <span className="text-sm">感想を書く</span>
