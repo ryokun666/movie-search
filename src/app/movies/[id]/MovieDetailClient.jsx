@@ -47,7 +47,7 @@ const MovieDetailClient = ({ movieId }) => {
           `https://api.themoviedb.org/3/movie/${movieId}/watch/providers`,
           {
             params: {
-              api_key: "c3dda0e266ce91617479e207694a7bad",
+              api_key: process.env.NEXT_PUBLIC_MOVIE_API_KEY,
             },
           }
         );
@@ -69,7 +69,7 @@ const MovieDetailClient = ({ movieId }) => {
           `https://api.themoviedb.org/3/movie/${movieId}`,
           {
             params: {
-              api_key: "c3dda0e266ce91617479e207694a7bad",
+              api_key: process.env.NEXT_PUBLIC_MOVIE_API_KEY,
               language: "ja-JP",
               append_to_response: "credits,videos",
             },

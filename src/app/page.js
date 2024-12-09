@@ -121,7 +121,7 @@ export default function Home() {
           `https://api.themoviedb.org/3/search/movie`,
           {
             params: {
-              api_key: "c3dda0e266ce91617479e207694a7bad",
+              api_key: process.env.NEXT_PUBLIC_MOVIE_API_KEY,
               query: query,
               language: "ja-JP",
               page: 1,
