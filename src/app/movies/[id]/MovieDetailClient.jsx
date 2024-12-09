@@ -2,12 +2,42 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { ArrowLeft, Calendar, Star, Clock, Globe } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Star,
+  Clock,
+  Globe,
+  ThumbsUp,
+  Flag,
+  MessageCircle,
+} from "lucide-react";
+import { useComments } from "@/hooks/useComments"; // コメント機能用フック
+import { likeStorage } from "@/lib/comments";
+import { getRelativeTime } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 const MovieDetailClient = ({ movieId }) => {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // コメント機能用のState
+  const [nickname, setNickname] = useState("");
+  const [comment, setComment] = useState("");
+  const [rating, setRating] = useState(0);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedCommentId, setSelectedCommentId] = useState(null);
+
+  const {
+    comments,
+    isLoading: commentsLoading,
+    error: commentsError,
+    postComment,
+    handleLike,
+    handleReport,
+  } = useComments(movieId);
 
   useEffect(() => {
     const fetchMovieDetail = async () => {
@@ -45,6 +75,55 @@ const MovieDetailClient = ({ movieId }) => {
     fetchMovieDetail();
   }, [movieId]);
 
+  const handleSubmit = async () => {
+    if (!comment.trim() || rating === 0) return;
+
+    try {
+      await postComment({
+        movieId: movie.id,
+        nickname: nickname.trim() || "匿名希望くん",
+        rating,
+        comment: comment.trim(),
+        movieData: movie,
+      });
+
+      setComment("");
+      setRating(0);
+      setNickname("");
+    } catch (error) {
+      console.error("Error posting comment:", error);
+    }
+  };
+
+  const onLikeClick = async (commentId, e) => {
+    e.stopPropagation();
+    try {
+      const success = await handleLike(commentId);
+      if (!success) {
+        alert("既にいいねしています");
+      }
+    } catch (error) {
+      console.error("Error liking comment:", error);
+    }
+  };
+
+  const onReportClick = (commentId, e) => {
+    e.stopPropagation();
+    setSelectedCommentId(commentId);
+    setIsReportModalOpen(true);
+  };
+
+  const submitReport = async (reason) => {
+    try {
+      await handleReport(selectedCommentId, reason);
+      setIsReportModalOpen(false);
+      setSelectedCommentId(null);
+      alert("報告を受け付けました");
+    } catch (error) {
+      console.error("Error reporting comment:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
@@ -75,6 +154,28 @@ const MovieDetailClient = ({ movieId }) => {
     ? movie.overview
     : "日本語の概要は登録されていません。";
 
+  // 言語コードと日本語名のマッピング
+  const languageMap = {
+    en: "英語",
+    ja: "日本語",
+    fr: "フランス語",
+    de: "ドイツ語",
+    zh: "中国語",
+    ko: "韓国語",
+    es: "スペイン語",
+    it: "イタリア語",
+    ru: "ロシア語",
+    pt: "ポルトガル語",
+    ar: "アラビア語",
+    hi: "ヒンディー語",
+    // 必要に応じて他の言語も追加
+  };
+
+  // 言語コードを日本語表記に変換する関数
+  const getLanguageName = (code) => {
+    return languageMap[code] || code.toUpperCase(); // マッピングがない場合はそのまま表示
+  };
+
   return (
     <div className="min-h-screen bg-slate-100">
       {/* バックドロップ画像 */}
@@ -93,7 +194,7 @@ const MovieDetailClient = ({ movieId }) => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 relative z-10">
         {/* 戻るボタン */}
         <button
-          onClick={() => window.history.back()}
+          onClick={() => (window.location.href = "/")}
           className="mb-4 inline-flex items-center text-white hover:text-blue-100 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -128,17 +229,14 @@ const MovieDetailClient = ({ movieId }) => {
                   <Calendar className="w-4 h-4 mr-2" />
                   <span>{movie.release_date}</span>
                 </div>
-                <div className="flex items-center text-gray-600">
-                  <Star className="w-4 h-4 mr-2 text-yellow-500" />
-                  <span>{movie.vote_average?.toFixed(1) || "N/A"}</span>
-                </div>
+
                 <div className="flex items-center text-gray-600">
                   <Clock className="w-4 h-4 mr-2" />
                   <span>{movie.runtime}分</span>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Globe className="w-4 h-4 mr-2" />
-                  <span>{movie.original_language.toUpperCase()}</span>
+                  <span>{getLanguageName(movie.original_language)}</span>
                 </div>
               </div>
 
@@ -166,24 +264,181 @@ const MovieDetailClient = ({ movieId }) => {
 
               {/* キャスト */}
               {movie.credits?.cast && movie.credits.cast.length > 0 && (
-                <div>
+                <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-2">キャスト</h2>
                   <div className="flex flex-wrap gap-2">
                     {movie.credits.cast.slice(0, 5).map((person) => (
-                      <span
+                      <a
                         key={person.id}
-                        className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                        href={`https://www.google.com/search?q=${encodeURIComponent(
+                          person.name
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-full text-sm transition-colors"
                       >
                         {person.name}
-                      </span>
+                      </a>
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* コメント一覧・フォーム */}
+              <div className="mt-10">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5" />
+                  コメント一覧
+                </h2>
+
+                {/* コメント投稿フォーム */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex gap-1 mb-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-5 h-5 cursor-pointer ${
+                          star <= rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                        onClick={() => setRating(star)}
+                      />
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    placeholder="ニックネーム（省略可）"
+                    className="w-full rounded-md border px-3 py-1.5 text-sm mb-2 border-gray-200"
+                    maxLength={20}
+                  />
+
+                  <Textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="映画の感想を共有しよう..."
+                    className="min-h-[80px] text-sm mb-2 bg-white border-gray-200"
+                  />
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!comment.trim() || rating === 0}
+                    variant="post"
+                    size="sm"
+                    className="w-full"
+                  >
+                    投稿する
+                  </Button>
+                </div>
+
+                {/* コメント表示部分 */}
+                {commentsLoading ? (
+                  <div className="flex justify-center p-2">
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : comments && comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments.map((cmt) => (
+                      <div
+                        key={cmt.id}
+                        className="p-3 border rounded-lg bg-white border-gray-200"
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">
+                              {cmt.nickname}
+                            </span>
+                            <div className="flex gap-0.5">
+                              {Array.from({ length: 5 }).map((_, index) => (
+                                <Star
+                                  key={index}
+                                  className={`w-3 h-3 ${
+                                    index < cmt.rating
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => onLikeClick(cmt.id, e)}
+                              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                                likeStorage.hasLiked(cmt.id)
+                                  ? "bg-blue-50 text-blue-500"
+                                  : "bg-gray-50 text-gray-500"
+                              }`}
+                            >
+                              <ThumbsUp className="w-3 h-3" /> {cmt.likes}
+                            </button>
+                            <button
+                              onClick={(e) => onReportClick(cmt.id, e)}
+                              className="text-gray-400 hover:text-red-500"
+                            >
+                              <Flag className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm text-gray-700">{cmt.comment}</p>
+                          <div className="text-xs text-gray-500">
+                            {getRelativeTime(cmt.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-center text-gray-500">
+                    まだコメントはありません
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 報告モーダル */}
+      {isReportModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={() => setIsReportModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg p-4 max-w-sm w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold mb-3 text-gray-900">
+              コメントを報告
+            </h3>
+            <div className="space-y-1">
+              {["不適切なコンテンツ", "スパム", "ネタバレ", "その他"].map(
+                (reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => submitReport(reason)}
+                    className="w-full text-left p-3 rounded-lg text-sm hover:bg-gray-100 text-gray-700"
+                  >
+                    {reason}
+                  </button>
+                )
+              )}
+            </div>
+            <Button
+              onClick={() => setIsReportModalOpen(false)}
+              variant="outline"
+              size="sm"
+              className="w-full mt-3"
+            >
+              キャンセル
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

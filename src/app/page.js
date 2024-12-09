@@ -719,7 +719,7 @@ export default function Home() {
                 )}
               </>
             )}
-            {query && !isLoading && (
+            {query && !isLoading && movies.length === 0 && (
               <div
                 className={`text-center ${
                   isDarkMode ? "text-gray-400" : "text-gray-600"
@@ -729,17 +729,6 @@ export default function Home() {
               </div>
             )}
           </>
-        )}
-
-        {/* 検索結果が0件の場合 */}
-        {movies.length === 0 && !isLoading && query && (
-          <div
-            className={`text-center ${
-              isDarkMode ? "text-gray-400" : "text-gray-600"
-            } mt-8`}
-          >
-            検索結果が見つかりませんでした。
-          </div>
         )}
         {/* ローディング表示 */}
         {isLoading && (
