@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import {
   Star,
+  ThumbsUp,
   MessageCircle,
   ChevronDown,
   Calendar,
@@ -17,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useComments } from "@/hooks/useComments";
 import { likeStorage } from "@/lib/comments";
+import { getRelativeTime } from "@/lib/utils";
+import { useConfetti } from "@/hooks/useConfetti";
 
 export default function MovieCard({ movie, viewMode, isDarkMode }) {
   const [nickname, setNickname] = useState("");
@@ -34,13 +37,14 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
 
     try {
       await postComment({
-        movieId: movie.id, // TMDb APIの映画ID
+        movieId: movie.id,
         nickname: nickname.trim() || `匿名${Math.floor(Math.random() * 1000)}`,
         rating,
         comment: comment.trim(),
-        movieData: movie, // 映画情報も一緒に保存
       });
 
+      // コンフェッティ発動
+      triggerConfetti();
       setComment("");
       setRating(0);
       setNickname("");
@@ -128,14 +132,6 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
               >
                 {movie.title}
               </h2>
-              <div className="flex items-center gap-1 text-sm shrink-0">
-                <Star className="w-4 h-4 text-yellow-500" />
-                <span
-                  className={isDarkMode ? "text-gray-300" : "text-gray-700"}
-                >
-                  {movie.vote_average?.toFixed(1) || "N/A"}
-                </span>
-              </div>
             </div>
             <div className="text-xs text-gray-500">
               {movie.release_date?.split("-")[0]}
@@ -172,26 +168,33 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs shrink-0">
-                    <button
-                      onClick={(e) => onLikeClick(featuredComment.id, e)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-full ${
-                        likeStorage.hasLiked(featuredComment.id)
-                          ? "bg-blue-50 text-blue-500"
-                          : "bg-gray-50 text-gray-500"
-                      }`}
-                    >
-                      👍 {featuredComment.likes}
-                    </button>
+                  <button
+                    onClick={(e) => onLikeClick(featuredComment.id, e)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full ${
+                      likeStorage.hasLiked(featuredComment.id)
+                        ? "bg-blue-50 text-blue-500"
+                        : "bg-gray-50 text-gray-500"
+                    }`}
+                  >
+                    <ThumbsUp className="w-3 h-3" /> {featuredComment.likes}
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  <p
+                    className={`text-sm ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    } line-clamp-2`}
+                  >
+                    {featuredComment.comment}
+                  </p>
+                  <div
+                    className={`text-xs ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    {getRelativeTime(featuredComment.timestamp)}
                   </div>
                 </div>
-                <p
-                  className={`text-sm ${
-                    isDarkMode ? "text-gray-300" : "text-gray-700"
-                  } line-clamp-2`}
-                >
-                  {featuredComment.comment}
-                </p>
               </div>
             ) : (
               <p className="text-sm text-center text-gray-500">
@@ -266,10 +269,22 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                     <Button
                       onClick={handleSubmit}
                       disabled={!comment.trim() || rating === 0}
+                      variant="post"
                       size="sm"
                       className="w-full"
                     >
-                      投稿する
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="font-bold">投稿する</span>
+                        {rating > 0 && comment.trim() ? (
+                          <span className="text-xs bg-white bg-opacity-20 px-2 py-0.5 rounded-full">
+                            Ready!
+                          </span>
+                        ) : (
+                          <span className="text-xs opacity-75">
+                            {!rating ? "評価を選択" : "感想を入力"}
+                          </span>
+                        )}
+                      </div>
                     </Button>
                   </div>
 
@@ -305,16 +320,16 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                             ))}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-xs">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={(e) => onLikeClick(item.id, e)}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-full ${
+                            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
                               likeStorage.hasLiked(item.id)
                                 ? "bg-blue-50 text-blue-500"
                                 : "bg-gray-50 text-gray-500"
                             }`}
                           >
-                            👍 {item.likes}
+                            <ThumbsUp className="w-3 h-3" /> {item.likes}
                           </button>
                           <button
                             onClick={(e) => onReportClick(item.id, e)}
@@ -324,13 +339,22 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                           </button>
                         </div>
                       </div>
-                      <p
-                        className={`text-sm ${
-                          isDarkMode ? "text-gray-300" : "text-gray-700"
-                        }`}
-                      >
-                        {item.comment}
-                      </p>
+                      <div className="space-y-1">
+                        <p
+                          className={`text-sm ${
+                            isDarkMode ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          {item.comment}
+                        </p>
+                        <div
+                          className={`text-xs ${
+                            isDarkMode ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          {getRelativeTime(item.timestamp)}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

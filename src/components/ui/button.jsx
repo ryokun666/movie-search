@@ -19,7 +19,7 @@ const Button = React.forwardRef(
       <Comp
         className={cn(
           // ベーススタイル
-          "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
 
           // バリアントスタイル
           {
@@ -40,6 +40,9 @@ const Button = React.forwardRef(
             // リンク
             "text-primary underline-offset-4 hover:underline":
               variant === "link",
+            // 投稿ボタン用のカスタムスタイル
+            "bg-blue-500 text-white hover:bg-blue-600 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] transform-gpu shadow-sm":
+              variant === "post",
           },
 
           // サイズスタイル

@@ -582,7 +582,7 @@ export default function Home() {
           )}
 
           {/* フィルターとソート */}
-          <div className="flex flex-wrap gap-4 mb-4">
+          {/* <div className="flex flex-wrap gap-4 mb-4">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -658,7 +658,7 @@ export default function Home() {
                 </option>
               ))}
             </select>
-          </div>
+          </div> */}
         </div>
         {/* エラーメッセージ */}
         {error && (
