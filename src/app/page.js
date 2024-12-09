@@ -60,9 +60,13 @@ export default function Home() {
       try {
         setIsLoadingRecent(true);
         const movies = await getRecentCommentedMovies();
-        setRecentMovies(movies);
+        if (movies && movies.length > 0) {
+          setRecentMovies(movies);
+        }
       } catch (error) {
         console.error("Error fetching recent movies:", error);
+        // エラー時の状態更新（必要に応じて）
+        setRecentMovies([]);
       } finally {
         setIsLoadingRecent(false);
       }

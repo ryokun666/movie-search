@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import _ from "lodash";
 import { db } from "./firebase";
+import axios from "axios";
 
 const COMMENTS_COLLECTION = "comments";
 const REPORTS_COLLECTION = "reports";
@@ -129,40 +130,53 @@ export async function getRecentCommentedMovies() {
     const q = query(
       collection(db, COMMENTS_COLLECTION),
       orderBy("timestamp", "desc"),
-      limit(10) // 最新10件を取得
+      limit(10)
     );
 
     const snapshot = await getDocs(q);
-    const commentedMovies = snapshot.docs.map((doc) => doc.data());
+    if (snapshot.empty) {
+      return []; // コメントがない場合は空配列を返す
+    }
+
+    const commentedMovies = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    }));
 
     // 重複する映画IDを除去
     const uniqueMovies = _.uniqBy(commentedMovies, "movieId");
 
-    // TMDBからの映画情報を取得
-    const movieDetails = await Promise.all(
-      uniqueMovies.slice(0, 4).map(async (comment) => {
-        const response = await axios.get(
-          `https://api.themoviedb.org/3/movie/${comment.movieId}`,
-          {
-            params: {
-              api_key: process.env.NEXT_PUBLIC_MOVIE_API_KEY,
-              language: "ja-JP",
-            },
-          }
-        );
+    try {
+      // TMDBからの映画情報を取得
+      const movieDetails = await Promise.all(
+        uniqueMovies.slice(0, 4).map(async (comment) => {
+          const response = await axios.get(
+            `https://api.themoviedb.org/3/movie/${comment.movieId}`,
+            {
+              params: {
+                api_key: process.env.NEXT_PUBLIC_MOVIE_API_KEY,
+                language: "ja-JP",
+              },
+            }
+          );
 
-        return {
-          ...response.data,
-          poster_url: response.data.poster_path
-            ? `https://image.tmdb.org/t/p/w500${response.data.poster_path}`
-            : null,
-        };
-      })
-    );
+          return {
+            ...response.data,
+            poster_url: response.data.poster_path
+              ? `https://image.tmdb.org/t/p/w500${response.data.poster_path}`
+              : null,
+            comment: comment, // コメント情報も保持
+          };
+        })
+      );
 
-    return movieDetails;
+      return movieDetails;
+    } catch (error) {
+      console.error("Error fetching movie details from TMDB:", error);
+      return []; // TMDBからの取得に失敗した場合は空配列を返す
+    }
   } catch (error) {
     console.error("Error fetching recent commented movies:", error);
-    throw error;
+    return []; // エラー時は空配列を返す
   }
 }
