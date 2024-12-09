@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useComments } from "@/hooks/useComments";
 import { likeStorage } from "@/lib/comments";
 import { getRelativeTime } from "@/lib/utils";
+import { useConfetti } from "@/hooks/useConfetti";
 
 export default function MovieCard({ movie, viewMode, isDarkMode }) {
   const [nickname, setNickname] = useState("");
@@ -31,6 +32,8 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
   const { comments, isLoading, error, postComment, handleLike, handleReport } =
     useComments(movie.id);
 
+  const { triggerConfetti } = useConfetti();
+
   const handleSubmit = async () => {
     if (!comment.trim() || rating === 0) return;
 
@@ -40,9 +43,10 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
         nickname: nickname.trim() || `匿名${Math.floor(Math.random() * 1000)}`,
         rating,
         comment: comment.trim(),
-        movieData: movie, // 必要に応じて
+        movieData: movie,
       });
 
+      triggerConfetti();
       setComment("");
       setRating(0);
       setNickname("");
@@ -166,16 +170,24 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                       ))}
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => onLikeClick(featuredComment.id, e)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-full ${
-                      likeStorage.hasLiked(featuredComment.id)
-                        ? "bg-blue-50 text-blue-500"
-                        : "bg-gray-50 text-gray-500"
-                    }`}
-                  >
-                    <ThumbsUp className="w-3 h-3" /> {featuredComment.likes}
-                  </button>
+                  <div className="flex items-center gap-2 text-xs shrink-0">
+                    <button
+                      onClick={(e) => onLikeClick(featuredComment.id, e)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-full ${
+                        likeStorage.hasLiked(featuredComment.id)
+                          ? "bg-blue-50 text-blue-500"
+                          : "bg-gray-50 text-gray-500"
+                      }`}
+                    >
+                      <ThumbsUp className="w-3 h-3" /> {featuredComment.likes}
+                    </button>
+                    <button
+                      onClick={(e) => onReportClick(featuredComment.id, e)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <Flag className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <p
