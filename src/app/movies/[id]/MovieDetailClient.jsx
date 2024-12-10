@@ -17,6 +17,8 @@ import { likeStorage } from "@/lib/comments";
 import { getRelativeTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import Image from "next/image";
+import { getBlurDataUrl } from "@/lib/imageUtils";
 
 const MovieDetailClient = ({ movieId }) => {
   const [movie, setMovie] = useState(null);
@@ -199,16 +201,25 @@ const MovieDetailClient = ({ movieId }) => {
     return languageMap[code] || code.toUpperCase(); // マッピングがない場合はそのまま表示
   };
 
+  // ブラーデータURLを生成
+  const backdropBlurUrl = getBlurDataUrl(1920, 1080); // 背景用の大きいサイズ
+  const posterBlurUrl = getBlurDataUrl(500, 750); // ポスター用のサイズ
+  const logoBlurUrl = getBlurDataUrl(92, 92); // ロゴ用の小さいサイズ
+
   return (
     <div className="min-h-screen bg-slate-100">
       {/* バックドロップ画像 */}
       {movie.backdrop_url && (
-        <div className="relative h-30 w-full">
-          <div className="absolute inset-0 bg-black/50"></div>
-          <img
+        <div className="relative h-72 w-full">
+          <div className="absolute inset-0 bg-black/50 z-10"></div>
+          <Image
             src={movie.backdrop_url}
             alt={movie.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover transition-opacity duration-300"
+            priority
+            placeholder="blur"
+            blurDataURL={backdropBlurUrl}
           />
         </div>
       )}
@@ -227,12 +238,16 @@ const MovieDetailClient = ({ movieId }) => {
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="sm:flex">
             {/* ポスター画像 */}
-            <div className="sm:w-1/3 flex-shrink-0">
+            <div className="sm:w-1/3 flex-shrink-0 relative aspect-[2/3]">
               {movie.poster_url ? (
-                <img
+                <Image
                   src={movie.poster_url}
                   alt={movie.title}
-                  className="w-full h-auto"
+                  fill
+                  className="object-cover transition-opacity duration-300"
+                  priority
+                  placeholder="blur"
+                  blurDataURL={posterBlurUrl}
                 />
               ) : (
                 <div className="bg-gray-100 h-full w-full flex items-center justify-center">
@@ -285,7 +300,7 @@ const MovieDetailClient = ({ movieId }) => {
                 </div>
               )}
 
-              {/* 配信情報 - マージンを追加 */}
+              {/* 配信情報 */}
               <div className="mt-8 mb-6">
                 <h2 className="text-xl font-semibold mb-4">配信情報</h2>
                 {watchProviders ? (
@@ -294,13 +309,22 @@ const MovieDetailClient = ({ movieId }) => {
                       {watchProviders.flatrate.map((provider) => (
                         <div
                           key={provider.provider_id}
-                          className="flex items-center"
+                          className="relative w-12 h-12"
                         >
-                          <img
-                            src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
-                            alt={provider.provider_name}
-                            className="w-12 h-12 rounded-lg"
-                          />
+                          <a
+                            href={watchProviders.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Image
+                              src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                              alt={provider.provider_name}
+                              fill
+                              className="rounded-lg object-cover transition-opacity duration-300"
+                              placeholder="blur"
+                              blurDataURL={logoBlurUrl}
+                            />
+                          </a>
                         </div>
                       ))}
                     </div>
