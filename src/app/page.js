@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import MovieCard from "@/components/MovieCard";
 import { getRecentCommentedMovies } from "@/lib/comments";
+import Header from "@/components/Header";
 
 export default function Home() {
   // 検索フォームの参照を作成
@@ -26,7 +27,6 @@ export default function Home() {
   const [error, setError] = useState(null);
 
   // 新しい機能のための状態
-  const [searchHistory, setSearchHistory] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
@@ -47,12 +47,6 @@ export default function Home() {
   // 最近コメントされた映画情報
   const [recentMovies, setRecentMovies] = useState([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
-
-  // 検索履歴をクリア
-  const clearSearchHistory = () => {
-    setSearchHistory([]);
-    localStorage.removeItem("searchHistory");
-  };
 
   // 最近コメントがついた映画を取得
   useEffect(() => {
@@ -241,10 +235,6 @@ export default function Home() {
       setPage(savedPage || 1);
     }
 
-    if (savedHistory) {
-      setSearchHistory(JSON.parse(savedHistory));
-    }
-
     if (savedViewMode) {
       setViewMode(savedViewMode);
     }
@@ -270,11 +260,6 @@ export default function Home() {
     }
   }, [query, movies, filters, sortBy, page]);
 
-  // 検索履歴の保存
-  useEffect(() => {
-    localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
-  }, [searchHistory]);
-
   // 表示モードの保存
   useEffect(() => {
     localStorage.setItem("viewMode", viewMode);
@@ -289,17 +274,6 @@ export default function Home() {
       document.documentElement.classList.remove("dark");
     }
   }, [isDarkMode]);
-
-  // 検索履歴に追加
-  const addToSearchHistory = (keyword) => {
-    setSearchHistory((prev) => {
-      const newHistory = [keyword, ...prev.filter((k) => k !== keyword)].slice(
-        0,
-        5
-      );
-      return newHistory;
-    });
-  };
 
   // ソート機能
   const sortMovies = (movies) => {
@@ -394,65 +368,11 @@ export default function Home() {
       }`}
     >
       {/* ヘッダー */}
-      <div className={`${isDarkMode ? "bg-gray-800" : "bg-white"} shadow`}>
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => {
-                clearSearch();
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={`text-3xl font-bold ${
-                isDarkMode
-                  ? "text-white hover:text-gray-200"
-                  : "text-gray-900 hover:text-gray-700"
-              } transition-colors`}
-            >
-              #誰かの映画メモ
-            </button>
-            <div className="flex items-center gap-4">
-              {searchHistory.length > 0 && (
-                <button
-                  onClick={() => {
-                    setSearchHistory([]);
-                    localStorage.removeItem("searchHistory");
-                  }}
-                  className={`px-3 py-1 text-sm rounded-lg transition-colors
-                  ${
-                    isDarkMode
-                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  履歴消去
-                </button>
-              )}
-              <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              >
-                {isDarkMode ? (
-                  <Sun className="text-white" size={20} />
-                ) : (
-                  <Moon size={20} />
-                )}
-              </button>
-              <button
-                onClick={() =>
-                  setViewMode(viewMode === "grid" ? "list" : "grid")
-                }
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              >
-                {viewMode === "grid" ? (
-                  <List className={isDarkMode ? "text-white" : ""} size={20} />
-                ) : (
-                  <Grid className={isDarkMode ? "text-white" : ""} size={20} />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Header
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+        clearSearch={clearSearch}
+      />
 
       {/* メインコンテンツ */}
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -549,116 +469,6 @@ export default function Home() {
               {isLoading ? "検索中..." : "検索"}
             </button>
           </div>
-
-          {/* 検索履歴 */}
-          {searchHistory.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span
-                className={`text-sm ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                最近の検索:
-              </span>
-              {searchHistory.map((keyword, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setQuery(keyword);
-                    // 検索履歴からの検索も新規検索として扱う
-                    searchMovies(keyword, 1);
-                  }}
-                  className={`px-3 py-1 text-sm rounded-full transition-colors
-                    ${
-                      isDarkMode
-                        ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                >
-                  {keyword}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* フィルターとソート */}
-          {/* <div className="flex flex-wrap gap-4 mb-4">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className={`px-3 py-1.5 rounded-lg border transition-colors
-                ${
-                  isDarkMode
-                    ? "bg-gray-800 border-gray-700 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
-                }`}
-            >
-              <option value="relevance">関連度順</option>
-              <option value="date">公開日順</option>
-              <option value="rating">評価順</option>
-              <option value="title">タイトル順</option>
-            </select>
-
-            <select
-              value={filters.genre}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, genre: e.target.value }))
-              }
-              className={`px-3 py-1.5 rounded-lg border transition-colors
-                ${
-                  isDarkMode
-                    ? "bg-gray-800 border-gray-700 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
-                }`}
-            >
-              <option value="">ジャンル: すべて</option>
-              {genreOptions.map((genre) => (
-                <option key={genre.id} value={genre.id}>
-                  {genre.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filters.year}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, year: e.target.value }))
-              }
-              className={`px-3 py-1.5 rounded-lg border transition-colors
-                ${
-                  isDarkMode
-                    ? "bg-gray-800 border-gray-700 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
-                }`}
-            >
-              <option value="">年: すべて</option>
-              {yearOptions.map((year) => (
-                <option key={year.value} value={year.value}>
-                  {year.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filters.rating}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, rating: e.target.value }))
-              }
-              className={`px-3 py-1.5 rounded-lg border transition-colors
-                ${
-                  isDarkMode
-                    ? "bg-gray-800 border-gray-700 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
-                }`}
-            >
-              <option value="">評価: すべて</option>
-              {ratingOptions.map((rating) => (
-                <option key={rating.value} value={rating.value}>
-                  {rating.label}
-                </option>
-              ))}
-            </select>
-          </div> */}
         </div>
         {/* エラーメッセージ */}
         {error && (
