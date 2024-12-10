@@ -203,7 +203,7 @@ const MovieDetailClient = ({ movieId }) => {
     <div className="min-h-screen bg-slate-100">
       {/* バックドロップ画像 */}
       {movie.backdrop_url && (
-        <div className="relative h-96 w-full">
+        <div className="relative h-30 w-full">
           <div className="absolute inset-0 bg-black/50"></div>
           <img
             src={movie.backdrop_url}
@@ -282,39 +282,37 @@ const MovieDetailClient = ({ movieId }) => {
                       </span>
                     ))}
                   </div>
-                  {/* 配信情報 */}
-                  <div className="mb-6">
-                    <h2 className="text-xl font-semibold mb-2">配信情報</h2>
-                    {watchProviders ? (
-                      watchProviders.flatrate ? (
-                        <div className="flex flex-wrap gap-4">
-                          {watchProviders.flatrate.map((provider) => (
-                            <div
-                              key={provider.provider_id}
-                              className="flex items-center"
-                            >
-                              <img
-                                src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
-                                alt={provider.provider_name}
-                                className="w-12 h-12 rounded-lg"
-                              />
-                              {/* <span className="ml-2 text-gray-700">
-                                {provider.provider_name}
-                              </span> */}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500">
-                          日本での配信情報はありません。
-                        </p>
-                      )
-                    ) : (
-                      <p className="text-gray-500">配信情報を取得中...</p>
-                    )}
-                  </div>
                 </div>
               )}
+
+              {/* 配信情報 - マージンを追加 */}
+              <div className="mt-8 mb-6">
+                <h2 className="text-xl font-semibold mb-4">配信情報</h2>
+                {watchProviders ? (
+                  watchProviders.flatrate ? (
+                    <div className="flex flex-wrap gap-4">
+                      {watchProviders.flatrate.map((provider) => (
+                        <div
+                          key={provider.provider_id}
+                          className="flex items-center"
+                        >
+                          <img
+                            src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                            alt={provider.provider_name}
+                            className="w-12 h-12 rounded-lg"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">
+                      日本での配信情報はありません。
+                    </p>
+                  )
+                ) : (
+                  <p className="text-gray-500">配信情報を取得中...</p>
+                )}
+              </div>
 
               {/* キャスト */}
               {movie.credits?.cast && movie.credits.cast.length > 0 && (
