@@ -130,7 +130,7 @@ export async function getRecentCommentedMovies() {
     const q = query(
       collection(db, COMMENTS_COLLECTION),
       orderBy("timestamp", "desc"),
-      limit(10)
+      limit(30)
     );
 
     const snapshot = await getDocs(q);
@@ -149,7 +149,7 @@ export async function getRecentCommentedMovies() {
     try {
       // TMDBからの映画情報を取得
       const movieDetails = await Promise.all(
-        uniqueMovies.slice(0, 4).map(async (comment) => {
+        uniqueMovies.slice(0, 10).map(async (comment) => {
           const response = await axios.get(
             `https://api.themoviedb.org/3/movie/${comment.movieId}`,
             {
