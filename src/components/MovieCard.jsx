@@ -167,7 +167,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                       {Array.from({ length: 5 }).map((_, index) => (
                         <Star
                           key={index}
-                          className={`w-3 h-3 ${
+                          className={`w-4 h-4 ${
                             index < featuredComment.rating
                               ? "fill-yellow-400 text-yellow-400"
                               : "text-gray-300"
@@ -199,7 +199,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                   <p
                     className={`text-sm ${
                       isDarkMode ? "text-gray-300" : "text-gray-700"
-                    } line-clamp-2`}
+                    } line-clamp-2 whitespace-pre-wrap`}
                   >
                     {featuredComment.comment}
                   </p>
@@ -250,7 +250,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
-                          className={`w-5 h-5 cursor-pointer ${
+                          className={`w-6 h-6 cursor-pointer ${
                             star <= rating
                               ? "fill-yellow-400 text-yellow-400"
                               : "text-gray-300"
@@ -328,7 +328,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                             {Array.from({ length: 5 }).map((_, index) => (
                               <Star
                                 key={index}
-                                className={`w-3 h-3 ${
+                                className={`w-4 h-4 ${
                                   index < item.rating
                                     ? "fill-yellow-400 text-yellow-400"
                                     : "text-gray-300"
@@ -360,7 +360,7 @@ export default function MovieCard({ movie, viewMode, isDarkMode }) {
                         <p
                           className={`text-sm ${
                             isDarkMode ? "text-gray-300" : "text-gray-700"
-                          }`}
+                          } whitespace-pre-wrap`}
                         >
                           {item.comment}
                         </p>
