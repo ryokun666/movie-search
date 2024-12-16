@@ -338,7 +338,6 @@ export default function Home() {
       }
 
       setTotalPages(response.data.total_pages);
-      addToSearchHistory(searchQuery);
       setPage(newPage);
     } catch (error) {
       setError("映画の検索中にエラーが発生しました。もう一度お試しください。");
