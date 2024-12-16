@@ -9,6 +9,7 @@ import {
   Settings,
   Sun,
   Moon,
+  MessageCircle,
 } from "lucide-react";
 
 export default function Header({ isDarkMode, setIsDarkMode, clearSearch }) {
@@ -44,6 +45,15 @@ export default function Header({ isDarkMode, setIsDarkMode, clearSearch }) {
       icon: isDarkMode ? Sun : Moon,
     },
     { label: "設定", onClick: () => console.log("設定"), icon: Settings },
+    {
+      label: "お問い合わせ",
+      onClick: () =>
+        window.open(
+          "https://docs.google.com/forms/d/e/1FAIpQLSdnmr_Z7LhdDGeFCUe77agO7GoLwW2UIn4NVpqtkHzbfXSAxQ/viewform?usp=header",
+          "_blank"
+        ),
+      icon: MessageCircle,
+    },
   ];
 
   return (
