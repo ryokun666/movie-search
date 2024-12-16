@@ -375,187 +375,191 @@ export default function Home() {
 
       {/* メインコンテンツ */}
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* 検索フォーム */}
-        <div className="max-w-3xl mx-auto mb-8">
-          <div className="flex gap-2 mb-4">
-            <div className="relative flex-1" ref={searchInputRef}>
-              <input
-                type="text"
-                placeholder="映画のタイトルを入力..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className={`w-full pl-10 pr-4 py-2 rounded-lg outline-none transition duration-200
-                  ${
-                    isDarkMode
-                      ? "bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-                      : "bg-white border-gray-300 text-gray-900"
-                  } border focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-              />
-              <Search
-                className={`absolute left-3 top-2.5 ${
-                  isDarkMode ? "text-gray-400" : "text-gray-500"
-                }`}
-                size={20}
-              />
+        <div className="pt-[88px] sm:pt-[104px]">
+          {/* 検索フォーム */}
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1" ref={searchInputRef}>
+                <input
+                  type="text"
+                  placeholder="映画のタイトルを入力..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg outline-none transition duration-200
+                    ${
+                      isDarkMode
+                        ? "bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                        : "bg-white border-gray-300 text-gray-900"
+                    } border focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                />
+                <Search
+                  className={`absolute left-3 top-2.5 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                  size={20}
+                />
 
-              {/* サジェストリスト */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div
-                  className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg overflow-hidden
-                  ${
-                    isDarkMode
-                      ? "bg-gray-800 border-gray-700"
-                      : "bg-white border-gray-200"
-                  } border`}
-                >
-                  {suggestions.map((suggestion, index) => (
-                    <div
-                      key={suggestion.id}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className={`flex items-center p-3 cursor-pointer transition-colors
-                        ${
-                          index === selectedIndex
-                            ? isDarkMode
-                              ? "bg-gray-700"
-                              : "bg-blue-50"
-                            : isDarkMode
-                            ? "hover:bg-gray-700"
-                            : "hover:bg-gray-50"
-                        }
-                        ${isDarkMode ? "border-gray-700" : "border-gray-100"}
-                        ${index !== suggestions.length - 1 ? "border-b" : ""}`}
-                    >
-                      {suggestion.posterPath ? (
-                        <img
-                          src={suggestion.posterPath}
-                          alt={suggestion.title}
-                          className="w-10 h-14 object-cover rounded mr-3 flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-10 h-14 bg-gray-200 rounded mr-3 flex items-center justify-center flex-shrink-0">
-                          <Info size={20} className="text-gray-400" />
-                        </div>
-                      )}
-                      <div>
-                        <div
-                          className={`font-medium ${
-                            isDarkMode ? "text-white" : "text-gray-900"
+                {/* サジェストリスト */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div
+                    className={`absolute z-50 w-full mt-1 rounded-lg shadow-lg overflow-hidden
+                    ${
+                      isDarkMode
+                        ? "bg-gray-800 border-gray-700"
+                        : "bg-white border-gray-200"
+                    } border`}
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <div
+                        key={suggestion.id}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className={`flex items-center p-3 cursor-pointer transition-colors
+                          ${
+                            index === selectedIndex
+                              ? isDarkMode
+                                ? "bg-gray-700"
+                                : "bg-blue-50"
+                              : isDarkMode
+                              ? "hover:bg-gray-700"
+                              : "hover:bg-gray-50"
+                          }
+                          ${isDarkMode ? "border-gray-700" : "border-gray-100"}
+                          ${
+                            index !== suggestions.length - 1 ? "border-b" : ""
                           }`}
-                        >
-                          {suggestion.title}
-                        </div>
-                        {suggestion.releaseDate && (
-                          <div
-                            className={`text-sm ${
-                              isDarkMode ? "text-gray-400" : "text-gray-500"
-                            }`}
-                          >
-                            {suggestion.releaseDate}年
+                      >
+                        {suggestion.posterPath ? (
+                          <img
+                            src={suggestion.posterPath}
+                            alt={suggestion.title}
+                            className="w-10 h-14 object-cover rounded mr-3 flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-14 bg-gray-200 rounded mr-3 flex items-center justify-center flex-shrink-0">
+                            <Info size={20} className="text-gray-400" />
                           </div>
                         )}
+                        <div>
+                          <div
+                            className={`font-medium ${
+                              isDarkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {suggestion.title}
+                          </div>
+                          {suggestion.releaseDate && (
+                            <div
+                              className={`text-sm ${
+                                isDarkMode ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              {suggestion.releaseDate}年
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => searchMovies()}
-              disabled={isLoading || !query.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition duration-200 font-medium min-w-[100px]"
-            >
-              {isLoading ? "検索中..." : "検索"}
-            </button>
-          </div>
-        </div>
-        {/* エラーメッセージ */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-200">
-            {error}
-          </div>
-        )}
-        {/* 検索結果 */}
-        {movies.length > 0 ? (
-          <div
-            className={`${
-              viewMode === "grid"
-                ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-                : "space-y-4"
-            }`}
-          >
-            {sortMovies(filterMovies(movies)).map((movie) => (
-              <MovieCard
-                key={movie.id}
-                movie={movie}
-                viewMode={viewMode}
-                isDarkMode={isDarkMode}
-              />
-            ))}
-          </div>
-        ) : (
-          <>
-            {!query && (
-              <>
-                <h2
-                  className={`text-xl font-bold mb-6 ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  最近コメントがついた映画
-                </h2>
-                {isLoadingRecent ? (
-                  <div className="flex justify-center mt-8">
-                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : (
-                  <div
-                    className={`${
-                      viewMode === "grid"
-                        ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-                        : "space-y-4"
-                    }`}
-                  >
-                    {recentMovies.map((movie) => (
-                      <MovieCard
-                        key={movie.id}
-                        movie={movie}
-                        viewMode={viewMode}
-                        isDarkMode={isDarkMode}
-                      />
                     ))}
                   </div>
                 )}
-              </>
-            )}
-            {query && !isLoading && movies.length === 0 && (
-              <div
-                className={`text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                } mt-8`}
-              >
-                検索結果が見つかりませんでした。
               </div>
-            )}
-          </>
-        )}
-        {/* ローディング表示 */}
-        {isLoading && (
-          <div className="flex justify-center mt-8">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <button
+                onClick={() => searchMovies()}
+                disabled={isLoading || !query.trim()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition duration-200 font-medium min-w-[100px]"
+              >
+                {isLoading ? "検索中..." : "検索"}
+              </button>
+            </div>
           </div>
-        )}
-        {/* もっと読み込むボタン */}
-        {movies.length > 0 && page < totalPages && !isLoading && (
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => searchMovies(query, page + 1)}
-              className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          {/* エラーメッセージ */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-200">
+              {error}
+            </div>
+          )}
+          {/* 検索結果 */}
+          {movies.length > 0 ? (
+            <div
+              className={`${
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                  : "space-y-4"
+              }`}
             >
-              もっと見る
-            </button>
-          </div>
-        )}
+              {sortMovies(filterMovies(movies)).map((movie) => (
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
+                  viewMode={viewMode}
+                  isDarkMode={isDarkMode}
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              {!query && (
+                <>
+                  <h2
+                    className={`text-xl font-bold mb-6 ${
+                      isDarkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    最近コメントがついた映画
+                  </h2>
+                  {isLoadingRecent ? (
+                    <div className="flex justify-center mt-8">
+                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    <div
+                      className={`${
+                        viewMode === "grid"
+                          ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                          : "space-y-4"
+                      }`}
+                    >
+                      {recentMovies.map((movie) => (
+                        <MovieCard
+                          key={movie.id}
+                          movie={movie}
+                          viewMode={viewMode}
+                          isDarkMode={isDarkMode}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {query && !isLoading && movies.length === 0 && (
+                <div
+                  className={`text-center ${
+                    isDarkMode ? "text-gray-400" : "text-gray-600"
+                  } mt-8`}
+                >
+                  検索結果が見つかりませんでした。
+                </div>
+              )}
+            </>
+          )}
+          {/* ローディング表示 */}
+          {isLoading && (
+            <div className="flex justify-center mt-8">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+          {/* もっと読み込むボタン */}
+          {movies.length > 0 && page < totalPages && !isLoading && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => searchMovies(query, page + 1)}
+                className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                もっと見る
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

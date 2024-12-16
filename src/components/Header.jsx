@@ -10,6 +10,7 @@ import {
   Sun,
   Moon,
   MessageCircle,
+  Info,
 } from "lucide-react";
 
 export default function Header({ isDarkMode, setIsDarkMode, clearSearch }) {
@@ -30,21 +31,31 @@ export default function Header({ isDarkMode, setIsDarkMode, clearSearch }) {
   const menuItems = [
     { label: "ホーム", onClick: clearSearch, icon: Home },
     {
-      label: "お気に入り",
-      onClick: () => console.log("お気に入り"),
-      icon: Heart,
+      label: "使い方",
+      onClick: () => (window.location.href = "/guide"),
+      icon: Info,
     },
-    {
-      label: "視聴履歴",
-      onClick: () => console.log("視聴履歴"),
-      icon: History,
-    },
+    // {
+    //   label: "お気に入り",
+    //   onClick: () => console.log("お気に入り"),
+    //   icon: Heart,
+    // },
+    // {
+    //   label: "視聴履歴",
+    //   onClick: () => console.log("視聴履歴"),
+    //   icon: History,
+    // },
+
     {
       label: isDarkMode ? "ライトモード" : "ダークモード",
       onClick: () => setIsDarkMode(!isDarkMode),
       icon: isDarkMode ? Sun : Moon,
     },
-    { label: "設定", onClick: () => console.log("設定"), icon: Settings },
+    {
+      label: "設定（未実装）",
+      onClick: () => console.log("設定"),
+      icon: Settings,
+    },
     {
       label: "お問い合わせ",
       onClick: () =>
@@ -60,7 +71,7 @@ export default function Header({ isDarkMode, setIsDarkMode, clearSearch }) {
     <div
       className={`${
         isDarkMode ? "bg-gray-800" : "bg-white"
-      } shadow relative z-50`}
+      } shadow fixed top-0 left-0 right-0 z-50`}
     >
       <div className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
