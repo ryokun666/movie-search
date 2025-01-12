@@ -471,7 +471,7 @@ const MovieDetailClient = ({ movieId }) => {
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-sm text-gray-700">{cmt.comment}</p>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{cmt.comment}</p>
                           <div className="text-xs text-gray-500">
                             {getRelativeTime(cmt.timestamp)}
                           </div>
